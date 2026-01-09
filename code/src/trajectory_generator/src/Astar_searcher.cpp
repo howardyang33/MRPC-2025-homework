@@ -1,4 +1,5 @@
 #include "Astar_searcher.h"
+#include <cmath>
 
 using namespace std;
 using namespace Eigen;
@@ -379,6 +380,60 @@ std::vector<Vector3d> Astarpath::pathSimplify(const vector<Vector3d> &path,
 
   return resultPath;
 }
+
+bool Astarpath::isLineFree(const Vector3d &p0, const Vector3d &p1) {
+  Vector3i id0 = coord2gridIndex(p0);
+  Vector3i id1 = coord2gridIndex(p1);
+  if (isOccupied(id0) || isOccupied(id1)) {
+    return false;
+  }
+
+  Vector3d dir = p1 - p0;
+  double dist = dir.norm();
+  if (dist < 1e-6) {
+    return true;
+  }
+  Vector3d dir_unit = dir / dist;
+
+  double step = resolution * 0.5;
+  int steps = static_cast<int>(std::ceil(dist / step));
+  for (int i = 1; i < steps; ++i) {
+    double s = step * i;
+    if (s >= dist) {
+      break;
+    }
+    Vector3d p = p0 + dir_unit * s;
+    if (isOccupied(coord2gridIndex(p))) {
+      return false;
+    }
+  }
+  return true;
+}
+
+vector<Vector3d> Astarpath::shortcutPath(const vector<Vector3d> &path) {
+  vector<Vector3d> out;
+  if (path.empty()) {
+    return out;
+  }
+  out.reserve(path.size());
+  size_t i = 0;
+  out.push_back(path.front());
+  while (i < path.size() - 1) {
+    size_t j = path.size() - 1;
+    for (; j > i + 1; --j) {
+      if (isLineFree(path[i], path[j])) {
+        break;
+      }
+    }
+    if (j == i) {
+      j = i + 1;
+    }
+    out.push_back(path[j]);
+    i = j;
+  }
+  return out;
+}
+
 
 double Astarpath::perpendicularDistance(const Eigen::Vector3d point_insert,const Eigen:: Vector3d point_st,const Eigen::Vector3d point_end)
 {

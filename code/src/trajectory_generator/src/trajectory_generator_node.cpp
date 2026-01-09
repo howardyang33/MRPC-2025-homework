@@ -270,6 +270,8 @@ bool trajGeneration() {
   visPathA(path);
 
   grid_path = _astar_path_finder->pathSimplify(grid_path, _path_resolution);
+  grid_path = _astar_path_finder->shortcutPath(grid_path);
+
   // grid_path = _astar_path_finder->getPath();
   path=MatrixXd::Zero(int(grid_path.size()), 3);
   for (int k = 0; k < int(grid_path.size()); k++) {

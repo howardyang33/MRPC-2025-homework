@@ -35,7 +35,7 @@ class Astarpath
 		bool isOccupied(const Eigen::Vector3i & index) const;
 		bool isFree(const int & idx_x, const int & idx_y, const int & idx_z) const;
 		bool isFree(const Eigen::Vector3i & index) const;
-    	
+    	bool isLineFree(const Eigen::Vector3d& p1, const Eigen::Vector3d& p2);
 		
 		
 
@@ -54,6 +54,7 @@ class Astarpath
 
 		Eigen::Vector3d coordRounding(const Eigen::Vector3d & coord);
 		std::vector<Eigen::Vector3d> getPath();
+		std::vector<Eigen::Vector3d> shortcutPath(const std::vector<Eigen::Vector3d>& path);//shortcut
 		std::vector<Eigen::Vector3d> getVisitedNodes();
 		std::vector<Eigen::Vector3d> pathSimplify(const std::vector<Eigen::Vector3d> &path, const double path_resolution);
 		Eigen::Vector3d getPosPoly( Eigen::MatrixXd polyCoeff, int k, double t );
