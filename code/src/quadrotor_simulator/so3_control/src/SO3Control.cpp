@@ -8,6 +8,10 @@ SO3Control::SO3Control()
   , g_(9.81)
 {
   acc_.setZero();
+  orientation_curr_.setIdentity();
+  omega_.setZero();
+  moment_.setZero();
+  J_ = Eigen::Vector3d(2.64e-3, 2.64e-3, 4.96e-3).asDiagonal();
 }
 
 void
@@ -40,7 +44,8 @@ SO3Control::calculateControl(const Eigen::Vector3d& des_pos,
                              const Eigen::Vector3d& des_acc,
                              const double des_yaw, const double des_yaw_dot,
                              const Eigen::Vector3d& kx,
-                             const Eigen::Vector3d& kv)   //用于根据期望的位置、速度、加速度、偏航角及其变化率以及控制增益等信息，计算出控制所需的力向量 force_ 和姿态四元数 orientation_
+                             const Eigen::Vector3d& kv, const Eigen::Vector3d& kR,
+                             const Eigen::Vector3d& kOm)   //用于根据期望的位置、速度、加速度、偏航角及其变化率以及控制增益等信息，计算出控制所需的力向量 force_ 和姿态四元数 orientation_
 {
 
   Eigen::Vector3d totalError =
@@ -112,6 +117,16 @@ SO3Control::calculateControl(const Eigen::Vector3d& des_pos,
   R << b1c, b2c, b3c;
 
   orientation_ = Eigen::Quaterniond(R);
+
+  Eigen::Matrix3d R_cur = orientation_curr_.toRotationMatrix();
+  Eigen::Matrix3d R_des = orientation_.toRotationMatrix();
+  Eigen::Matrix3d err = 0.5 * (R_des.transpose() * R_cur - R_cur.transpose() * R_des);
+  Eigen::Vector3d eR(err(2, 1), err(0, 2), err(1, 0));
+  Eigen::Vector3d eOm = omega_;
+  Eigen::Vector3d in = omega_.cross(J_ * omega_);
+
+  moment_.noalias() =
+    -(kR.asDiagonal() * eR) - (kOm.asDiagonal() * eOm) + in;
 }
 
 const Eigen::Vector3d&
@@ -126,8 +141,26 @@ SO3Control::getComputedOrientation(void)
   return orientation_;
 }
 
+const Eigen::Vector3d&
+SO3Control::getComputedMoment(void)
+{
+  return moment_;
+}
+
 void
 SO3Control::setAcc(const Eigen::Vector3d& acc)
 {
   acc_ = acc;
+}
+
+void
+SO3Control::setOrientation(const Eigen::Quaterniond& q)
+{
+  orientation_curr_ = q.normalized();
+}
+
+void
+SO3Control::setOmega(const Eigen::Vector3d& omega)
+{
+  omega_ = omega;
 }

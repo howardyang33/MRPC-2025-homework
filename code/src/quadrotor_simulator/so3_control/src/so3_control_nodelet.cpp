@@ -60,11 +60,15 @@ private:
 void
 SO3ControlNodelet::publishSO3Command(void)
 {
+  Eigen::Vector3d kR_vec(kR_[0], kR_[1], kR_[2]);
+  Eigen::Vector3d kOm_vec(kOm_[0], kOm_[1], kOm_[2]);
+
   controller_.calculateControl(des_pos_, des_vel_, des_acc_, des_yaw_,
-                               des_yaw_dot_, kx_, kv_);
+                               des_yaw_dot_, kx_, kv_, kR_vec, kOm_vec);
 
   const Eigen::Vector3d&    force       = controller_.getComputedForce();
   const Eigen::Quaterniond& orientation = controller_.getComputedOrientation();
+  const Eigen::Vector3d&    moment      = controller_.getComputedMoment();
 
   quadrotor_msgs::SO3Command::Ptr so3_command(
     new quadrotor_msgs::SO3Command); //! @note memory leak?
@@ -77,6 +81,9 @@ SO3ControlNodelet::publishSO3Command(void)
   so3_command->orientation.y   = orientation.y();
   so3_command->orientation.z   = orientation.z();
   so3_command->orientation.w   = orientation.w();
+  so3_command->moment.x        = moment(0);
+  so3_command->moment.y        = moment(1);
+  so3_command->moment.z        = moment(2);
   for (int i = 0; i < 3; i++)
   {
     so3_command->kR[i]  = kR_[i];
@@ -123,6 +130,12 @@ SO3ControlNodelet::odom_callback(const nav_msgs::Odometry::ConstPtr& odom)
 
   current_yaw_ = tf::getYaw(odom->pose.pose.orientation);
 
+  Eigen::Quaterniond q(odom->pose.pose.orientation.w,
+                       odom->pose.pose.orientation.x,
+                       odom->pose.pose.orientation.y,
+                       odom->pose.pose.orientation.z);
+  controller_.setOrientation(q);
+
   controller_.setPosition(position);
   controller_.setVelocity(velocity);
 
@@ -167,6 +180,11 @@ SO3ControlNodelet::imu_callback(const sensor_msgs::Imu& imu)
                             imu.linear_acceleration.y,
                             imu.linear_acceleration.z);
   controller_.setAcc(acc);
+
+  const Eigen::Vector3d omega(imu.angular_velocity.x,
+                              imu.angular_velocity.y,
+                              imu.angular_velocity.z);
+  controller_.setOmega(omega);
 }
 
 void

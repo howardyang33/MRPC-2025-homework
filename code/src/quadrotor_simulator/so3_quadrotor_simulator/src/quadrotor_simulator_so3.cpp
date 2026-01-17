@@ -15,6 +15,7 @@ typedef struct _Command
 {
   float force[3];
   float qx, qy, qz, qw;
+  float moment[3];
   float kR[3];
   float kOm[3];
   float corrections[3];
@@ -95,27 +96,9 @@ getControl(const QuadrotorSimulator::Quadrotor& quad, const Command& cmd)  //据
   if (Psi < 1.0f) // Position control stability guaranteed only when Psi < 1
     force = cmd.force[0] * R13 + cmd.force[1] * R23 + cmd.force[2] * R33;
 
-  float eR1 = 0.5f * (R12 * Rd13 - R13 * Rd12 + R22 * Rd23 - R23 * Rd22 +
-                      R32 * Rd33 - R33 * Rd32);
-  float eR2 = 0.5f * (R13 * Rd11 - R11 * Rd13 - R21 * Rd23 + R23 * Rd21 -
-                      R31 * Rd33 + R33 * Rd31);
-  float eR3 = 0.5f * (R11 * Rd12 - R12 * Rd11 + R21 * Rd22 - R22 * Rd21 +
-                      R31 * Rd32 - R32 * Rd31);
-
-  float eOm1 = Om1;
-  float eOm2 = Om2;
-  float eOm3 = Om3;
-
-  float in1 = Om2 * (I[2][0] * Om1 + I[2][1] * Om2 + I[2][2] * Om3) -
-              Om3 * (I[1][0] * Om1 + I[1][1] * Om2 + I[1][2] * Om3);
-  float in2 = Om3 * (I[0][0] * Om1 + I[0][1] * Om2 + I[0][2] * Om3) -
-              Om1 * (I[2][0] * Om1 + I[2][1] * Om2 + I[2][2] * Om3);
-  float in3 = Om1 * (I[1][0] * Om1 + I[1][1] * Om2 + I[1][2] * Om3) -
-              Om2 * (I[0][0] * Om1 + I[0][1] * Om2 + I[0][2] * Om3);
-
-  float M1 = -cmd.kR[0] * eR1 - cmd.kOm[0] * eOm1 + in1; // - I[0][0]*muR1;
-  float M2 = -cmd.kR[1] * eR2 - cmd.kOm[1] * eOm2 + in2; // - I[1][1]*muR2;
-  float M3 = -cmd.kR[2] * eR3 - cmd.kOm[2] * eOm3 + in3; // - I[2][2]*muR3;
+  float M1 = cmd.moment[0];
+  float M2 = cmd.moment[1];
+  float M3 = cmd.moment[2];
 
   float w_sq[4];
   w_sq[0] = force / (4 * kf) - M2 / (2 * d * kf) + M3 / (4 * km);
@@ -144,6 +127,9 @@ cmd_callback(const quadrotor_msgs::SO3Command::ConstPtr& cmd)   //控制指令�
   command.qy               = cmd->orientation.y;
   command.qz               = cmd->orientation.z;
   command.qw               = cmd->orientation.w;
+  command.moment[0]        = cmd->moment.x;
+  command.moment[1]        = cmd->moment.y;
+  command.moment[2]        = cmd->moment.z;
   command.kR[0]            = cmd->kR[0];
   command.kR[1]            = cmd->kR[1];
   command.kR[2]            = cmd->kR[2];
