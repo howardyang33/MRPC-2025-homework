@@ -111,8 +111,8 @@
      <param name="mass"                   value="0.98"/>
      <param name="use_angle_corrections " value="false"/>
      <param name="use_external_yaw "      value="false"/>
-     <param name="gains/rot/z"            value="1.0"/>    
-     <param name="gains/ang/z"            value="0.1"/>        
+     <param name="gains/rot/z"            value="0.7"/>    
+     <param name="gains/ang/z"            value="0.08"/>        
    </node> 
  
    <!-- Odom Visualization -->

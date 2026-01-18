@@ -168,7 +168,7 @@ void execCallback(const ros::TimerEvent &e) {
     time_Count++;
     ros::Time time_now = ros::Time::now();
     double t_cur = (time_now - time_traj_start).toSec();
-    double t_replan = ros::Duration(1, 0).toSec();
+    double t_replan = ros::Duration(3, 0).toSec();
     t_cur = min(time_duration, t_cur);
 
 
@@ -417,21 +417,18 @@ VectorXd timeAllocation(MatrixXd Path) {
   double dist;
   const double t = _Vel / _Acc;
   const double d = 0.5 * _Acc * t * t;
-  //使用梯形曲线分配时间
- for(int i=0;i<int(time.size());i++)
- {
-   piece= Path.row(i+1)-Path.row(i);
-   dist = piece.norm();
-       if (dist < d + d)
-    {
-        time(i)= 2.0 * sqrt(dist / _Acc);
+  const double scale = 2.0;
+
+  for (int i = 0; i < int(time.size()); i++) {
+    piece = Path.row(i + 1) - Path.row(i);
+    dist = piece.norm();
+    if (dist < d + d) {
+      time(i) = 2.0 * sqrt(dist / _Acc);
+    } else {
+      time(i) = 2.0 * t + (dist - 2.0 * d) / _Vel;
     }
-    else
-    {
-        time(i) =2.0 * t + (dist - 2.0 * d) / _Vel;
-    }
- }
-  return 2*time;
+  }
+  return scale * time;
 }
 
 void visTrajectory(MatrixXd polyCoeff, VectorXd time) {
